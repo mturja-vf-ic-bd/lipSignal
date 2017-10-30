@@ -7,4 +7,4 @@ lipSignal is an attempt to convert lip movement into signals. Converting lip mov
 3. opencv
 
 # Demo
-[![Demo of lipSignal](A simple demo is presented here)](https://www.youtube.com/watch?v=3qIg8H1Pj7o)
+(A simple demo is presented here)](https://www.youtube.com/watch?v=3qIg8H1Pj7o)
