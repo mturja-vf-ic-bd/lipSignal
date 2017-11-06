@@ -73,4 +73,43 @@ def detectLipMovement3(mouth, scale = 1):
 
     return dist/len(list1)/len(list2)/scale
 
+def find_angle(v1, v2):
+    c = np.dot(v1, v2) / norm(v1) / norm(v2)
+    angle = np.arccos(np.clip(c, -1, 1)) * 200
+    if angle <= 180:
+        return angle
+    else:
+        return 360 - angle
+
+def makeLine(p1, p2):
+    return np.array(p2[0], p2[1]) - np.array(p1[0], p1[1])
+
+def find_mid(p, q):
+    return ((p[0] + q[0])/2, (p[1] + q[1])/2)
+def featureSet(points, scale = 1):
+    pivot = find_mid(points[0], points[6])
+    angle_feature_set = []
+    for p in points:
+        angle_feature_set.append(find_angle(pivot, p))
+        angle_feature_set.append(norm(p - pivot)/scale)
+
+    return  angle_feature_set
+
+def find_nearest_neighbor(val, seedList):
+    dist = -1
+    nseed = None
+    count = -1
+    index = 0
+    for seed in seedList:
+        count = count + 1
+        p = norm(np.array(val) - np.array(seed))
+        print p
+        if dist == -1 or p < dist:
+            dist = p
+            nseed = seed
+            index = count
+
+    return nseed, index
+
+
 

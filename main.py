@@ -6,6 +6,9 @@ import time
 import datetime
 from numpy.linalg import norm
 import sounddevice as sd
+from sklearn.cluster import KMeans
+from sklearn.externals import joblib
+import pickle
 
 
 cap = cv2.VideoCapture(0)
@@ -18,6 +21,9 @@ fs = 44100
 duration = 10
 sound = sd.rec(int(duration * fs), samplerate=fs, channels=1)'''
 
+featureSet = []
+kmeans = joblib.load('kmeansModel.pkl')
+seeds = pickle.load(open('seed', 'rb'))
 while(cap.isOpened()):
     # Capture frame-by-frame
     ret, frame = cap.read()
@@ -35,21 +41,41 @@ while(cap.isOpened()):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
             # loop over the subset of facial landmarks, drawing the
             # specific face part
+            (p, q) = landmarks[48]
+            (s, t) = landmarks[54]
+            (p, q) = ((p + s)/2, (q + t)/2)
             for (x, y) in landmarks[i:j]:
                 cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
+                cv2.line(frame, (x, y), (p, q), (0, 255, 0), 1)
 
             ts = time.time()
             st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-            val = tools.detectLipMovement2(landmarks[i : j], scale = norm(landmarks[0] - landmarks[16]))
-            graph_data_set.append((val, st))
-            if val > 0.005:
-                print st + ' : Open'
-                cv2.putText(frame, 'Open', (x - 10, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            else:
-                print st + ' : Close'
-                cv2.putText(frame, 'Close', (x - 10, y - 10),
+            #val = tools.detectLipMovement2(landmarks[i : j], scale = norm(landmarks[0] - landmarks[16]))
+            afs = tools.featureSet(landmarks[i : j], scale = norm(landmarks[48] - landmarks[54]))
+            featureSet.append(afs)
+            temp = []
+            temp.append(afs)
+            temp = np.array(temp)
+            #val1 = 1
+            val1 = kmeans.predict(np.array(temp))
+            #minseed, val1 = tools.find_nearest_neighbor(afs, seeds)
+            print('kmean prediction: ', val1)
+            #graph_data_set.append((val, st))
+            writeText = None
+            if val1 == 0:
+                writeText = 'Smiling'
+            elif val1 == 1:
+                writeText = 'Laughing'
+            elif val1 == 2:
+                writeText = 'Pouting'
+            elif val1 == 3:
+                writeText = 'No movement'
+            elif val1 == 4:
+                writeText = 'Open'
+
+            cv2.putText(frame, writeText, (x + 40, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
 
         # Display the resulting frame
         cv2.imshow('frame',frame)
@@ -64,10 +90,10 @@ cap.release()
 out.release()
 cv2.destroyAllWindows()
 i = 0
-smooth_data = []
+'''smooth_data = []
 graph_data, time = zip(*graph_data_set)
 for i in range(1, len(graph_data) - 1):
-    smooth_data.append((graph_data[i - 1] + 3*graph_data[i] + graph_data[i + 1])/5)
+    smooth_data.append((graph_data[i - 1] + 3*graph_data[i] + graph_data[i + 1])/5)'''
 
 '''smooth_dif = []
 th = 0.7
@@ -92,6 +118,34 @@ plt.subplot(2,1,2)
 plt.plot(smooth_data)
 plt.title('Estimation from lips')
 plt.show()
-'''
+
 plt.plot(graph_data)
 plt.show()
+'''
+#Kmeans
+#print featu.shape
+
+'''print len(featureSet)
+with open('history', 'wb') as f:
+    pickle.dump(featureSet, f)'''
+
+
+featureSet = []
+with open('history', 'rb') as f:
+    while 1:
+        try:
+            tmpfeat = pickle.load(f)
+            for elem in tmpfeat:
+                featureSet.append(elem)
+        except EOFError:
+            break
+
+print len(featureSet)
+featureSet = np.array(featureSet)
+seeds = pickle.load(open('seed', 'rb'))
+seeds = np.array(seeds)
+print seeds.shape
+kmeans = KMeans(n_clusters=5, random_state=0).fit(featureSet)
+#joblib.dump(kmeans, 'kmeansModel.pkl')
+
+
